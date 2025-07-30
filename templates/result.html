@@ -1,0 +1,252 @@
+<!-- templates/GuessItGame/result.html -->
+{% extends 'base.html' %}
+
+{% block title %}Answer Result - Trivia Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        text-align: center;
+        padding: 40px;
+        border-radius: 20px;
+        margin: 30px 0;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+    
+    .result-correct {
+        background: linear-gradient(135deg, #2ed573 0%, #17a2b8 100%);
+        color: white;
+        animation: celebrateCorrect 1s ease-in-out;
+    }
+    
+    .result-incorrect {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        animation: shakeIncorrect 0.8s ease-in-out;
+    }
+    
+    @keyframes celebrateCorrect {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.05) rotate(1deg); }
+        50% { transform: scale(1.1) rotate(-1deg); }
+        75% { transform: scale(1.05) rotate(1deg); }
+    }
+    
+    @keyframes shakeIncorrect {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .result-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+        display: block;
+    }
+    
+    .result-title {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .result-message {
+        font-size: 1.3em;
+        margin-bottom: 30px;
+        opacity: 0.95;
+    }
+    
+    .points-display {
+        background: rgba(255,255,255,0.2);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+    
+    .points-number {
+        font-size: 3em;
+        font-weight: bold;
+        display: block;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .correct-answer-section {
+        background: rgba(255,255,255,0.15);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        border: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    .correct-answer-text {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    
+    .team-info {
+        background: rgba(255,255,255,0.1);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 20px 0;
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+    
+    .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-continue {
+        background: rgba(255,255,255,0.9);
+        color: #333;
+        font-weight: bold;
+        font-size: 1.1em;
+        padding: 15px 30px;
+        border-radius: 25px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-continue:hover {
+        background: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    @media (max-width: 768px) {
+        .result-card {
+            padding: 30px 20px;
+        }
+        
+        .result-title {
+            font-size: 2em;
+        }
+        
+        .result-icon {
+            font-size: 3em;
+        }
+        
+        .points-number {
+            font-size: 2.5em;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .btn-continue {
+            width: 100%;
+            max-width: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-card {% if result.correct %}result-correct{% else %}result-incorrect{% endif %}">
+    <span class="result-icon">
+        {% if result.correct %}🎉{% else %}😞{% endif %}
+    </span>
+    
+    <h1 class="result-title">
+        {% if result.correct %}
+            Correct!
+        {% else %}
+            Incorrect!
+        {% endif %}
+    </h1>
+    
+    <div class="team-info">
+        {{ result.team_name }}
+    </div>
+    
+    <div class="result-message">
+        {% if result.correct %}
+            Great job! You got it right!
+        {% else %}
+            Don't worry, better luck next time!
+        {% endif %}
+    </div>
+    
+    {% if result.points_awarded > 0 %}
+    <div class="points-display">
+        <div>Points Earned:</div>
+        <span class="points-number">+{{ result.points_awarded }}</span>
+    </div>
+    {% endif %}
+    
+    {% if not result.correct %}
+    <div class="correct-answer-section">
+        <div style="opacity: 0.9;">The correct answer was:</div>
+        <div class="correct-answer-text">{{ result.correct_answer }}</div>
+    </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="{% url 'game_board' %}" class="btn-continue">
+            Continue Game
+        </a>
+    </div>
+</div>
+
+<script>
+// Auto-redirect after 5 seconds
+setTimeout(() => {
+    window.location.href = "{% url 'game_board' %}";
+}, 5000);
+
+// Add confetti effect for correct answers
+{% if result.correct %}
+document.addEventListener('DOMContentLoaded', function() {
+    // Simple confetti effect using CSS animations
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7'];
+    
+    for (let i = 0; i < 50; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                top: -10px;
+                left: ${Math.random() * 100}vw;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 1000;
+                animation: fall ${Math.random() * 2 + 3}s linear forwards;
+            `;
+            
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => {
+                confetti.remove();
+            }, 5000);
+        }, i * 100);
+    }
+});
+
+// Add fall animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+        }
+    }
+`;
+document.head.appendChild(style);
+{% endif %}
+</script>
+{% endblock %}

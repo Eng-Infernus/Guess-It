@@ -1,0 +1,157 @@
+<!-- templates/GuessItGame/game_setup.html -->
+{% extends 'base.html' %}
+
+{% block title %}Game Setup - Trivia Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-setup {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 10px 0;
+        background: #f9f9f9;
+    }
+    
+    .color-picker {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .color-option {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid #ddd;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .color-option:hover {
+        transform: scale(1.1);
+    }
+    
+    .color-option.selected {
+        border-color: #333;
+        transform: scale(1.2);
+    }
+    
+    .team-preview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        background: white;
+    }
+    
+    .team-color-preview {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="text-center mb-20">🎮 Game Setup</h2>
+    <div class="text-center mb-20">
+        <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+    </div>
+    
+    <form method="post" id="gameSetupForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="num_teams">Number of Teams (2-8):</label>
+            <select id="num_teams" name="num_teams" onchange="updateTeamSetup()">
+                <option value="2">2 Teams</option>
+                <option value="3">3 Teams</option>
+                <option value="4">4 Teams</option>
+                <option value="5">5 Teams</option>
+                <option value="6">6 Teams</option>
+                <option value="7">7 Teams</option>
+                <option value="8">8 Teams</option>
+            </select>
+        </div>
+        
+        <div id="teamsContainer">
+            <!-- Teams will be dynamically generated here -->
+        </div>
+        
+        <div class="text-center mt-20">
+            <button type="submit" class="btn btn-success">Continue to Category Selection</button>
+        </div>
+    </form>
+</div>
+
+<script>
+const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+    '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D2B4DE',
+    '#AED6F1'
+];
+
+function updateTeamSetup() {
+    const numTeams = parseInt(document.getElementById('num_teams').value);
+    const container = document.getElementById('teamsContainer');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < numTeams; i++) {
+        const teamDiv = document.createElement('div');
+        teamDiv.className = 'team-setup';
+        teamDiv.innerHTML = `
+            <h3>Team ${i + 1}</h3>
+            <div class="form-group">
+                <label for="team_name_${i}">Team Name:</label>
+                <input type="text" id="team_name_${i}" name="team_name_${i}" 
+                       placeholder="Enter team name" required maxlength="50"
+                       onchange="updatePreview(${i})">
+            </div>
+            <div class="form-group">
+                <label>Team Color:</label>
+                <input type="hidden" id="team_color_${i}" name="team_color_${i}" value="${colors[i % colors.length]}">
+                <div class="color-picker">
+                    ${colors.map((color, idx) => `
+                        <div class="color-option ${idx === i % colors.length ? 'selected' : ''}" 
+                             style="background-color: ${color}"
+                             onclick="selectColor(${i}, '${color}', this)"></div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="team-preview">
+                <div class="team-color-preview" id="preview_color_${i}" style="background-color: ${colors[i % colors.length]}"></div>
+                <span id="preview_name_${i}">Team ${i + 1}</span>
+            </div>
+        `;
+        container.appendChild(teamDiv);
+    }
+}
+
+function selectColor(teamIndex, color, element) {
+    // Remove selected class from all color options in this team
+    const teamDiv = element.closest('.team-setup');
+    teamDiv.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    
+    // Add selected class to clicked option
+    element.classList.add('selected');
+    
+    // Update hidden input and preview
+    document.getElementById(`team_color_${teamIndex}`).value = color;
+    document.getElementById(`preview_color_${teamIndex}`).style.backgroundColor = color;
+}
+
+function updatePreview(teamIndex) {
+    const teamName = document.getElementById(`team_name_${teamIndex}`).value;
+    document.getElementById(`preview_name_${teamIndex}`).textContent = teamName || `Team ${teamIndex + 1}`;
+}
+
+// Initialize with 2 teams by default
+updateTeamSetup();
+</script>
+{% endblock %}

@@ -1,0 +1,162 @@
+<!-- templates/GuessItGame/category_selection.html -->
+{% extends 'base.html' %}
+
+{% block title %}Select Categories - Trivia Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    
+    .category-card {
+        border: 3px solid #ddd;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    .category-card.selected {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .category-card h3 {
+        margin: 0 0 10px 0;
+        font-size: 1.2em;
+    }
+    
+    .category-card .emoji {
+        font-size: 2em;
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .selected-count {
+        background: #667eea;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: inline-block;
+        margin: 20px 0;
+        font-weight: bold;
+    }
+    
+    .selected-count.complete {
+        background: #2ed573;
+    }
+    
+    .selected-count.over {
+        background: #ff6b6b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2 class="text-center mb-20">📚 Select 5 Categories</h2>
+    
+    <div class="text-center">
+        <span class="selected-count" id="selectedCount">Selected: 0/5</span>
+    </div>
+    
+    <form method="post" id="categoryForm">
+        {% csrf_token %}
+        <div class="category-grid">
+            {% for category in categories %}
+            <div class="category-card" onclick="toggleCategory('{{ category.category_name }}')">
+                <span class="emoji">
+                    {% if category.category_name == 'Science' %}🔬
+                    {% elif category.category_name == 'History' %}📜
+                    {% elif category.category_name == 'Geography' %}🌍
+                    {% elif category.category_name == 'Technology' %}💻
+                    {% elif category.category_name == 'Sports' %}⚽
+                    {% elif category.category_name == 'Entertainment' %}🎬
+                    {% elif category.category_name == 'Literature' %}📖
+                    {% elif category.category_name == 'Art' %}🎨
+                    {% elif category.category_name == 'Music' %}🎵
+                    {% elif category.category_name == 'Mathematics' %}🔢
+                    {% elif category.category_name == 'Food & Cooking' %}🍳
+                    {% elif category.category_name == 'Nature & Animals' %}🦁
+                    {% elif category.category_name == 'Language & Communication' %}🗣️
+                    {% elif category.category_name == 'Pop Culture & Social Media' %}📱
+                    {% else %}🎯{% endif %}
+                </span>
+                <h3>{{ category.category_name }}</h3>
+                <input type="checkbox" name="categories" value="{{ category.category_name }}" 
+                       style="display: none;" id="cat_{{ category.category_name|slugify }}">
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-20">
+            <button type="submit" class="btn btn-success" id="submitBtn" disabled>Start Game</button>
+            <a href="{% url 'game_setup' %}" class="btn">Back to Setup</a>
+        </div>
+    </form>
+</div>
+
+<script>
+let selectedCategories = [];
+
+function toggleCategory(categoryName) {
+    const checkbox = document.getElementById(`cat_${categoryName.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`);
+    const card = checkbox.closest('.category-card');
+    
+    if (selectedCategories.includes(categoryName)) {
+        // Deselect
+        selectedCategories = selectedCategories.filter(cat => cat !== categoryName);
+        card.classList.remove('selected');
+        checkbox.checked = false;
+    } else if (selectedCategories.length < 5) {
+        // Select
+        selectedCategories.push(categoryName);
+        card.classList.add('selected');
+        checkbox.checked = true;
+    }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const count = selectedCategories.length;
+    const countElement = document.getElementById('selectedCount');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    countElement.textContent = `Selected: ${count}/5`;
+    
+    if (count === 5) {
+        countElement.className = 'selected-count complete';
+        submitBtn.disabled = false;
+    } else if (count > 5) {
+        countElement.className = 'selected-count over';
+        submitBtn.disabled = true;
+    } else {
+        countElement.className = 'selected-count';
+        submitBtn.disabled = true;
+    }
+}
+
+// Prevent form submission if not exactly 5 categories selected
+document.getElementById('categoryForm').addEventListener('submit', function(e) {
+    if (selectedCategories.length !== 5) {
+        e.preventDefault();
+        alert('Please select exactly 5 categories!');
+    }
+});
+</script>
+{% endblock %}

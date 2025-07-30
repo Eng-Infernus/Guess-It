@@ -1,0 +1,281 @@
+<!-- templates/GuessItGame/game_board.html -->
+{% extends 'base.html' %}
+{% load custom_filters  %}
+
+{% block title %}Game Board - Trivia Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .game-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    
+    .current-team {
+        padding: 15px 25px;
+        border-radius: 25px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2em;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .teams-score {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .team-score {
+        padding: 10px 15px;
+        border-radius: 15px;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        min-width: 120px;
+    }
+
+    .game-controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .end-game-btn {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .end-game-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+    }
+    
+    .questions-grid {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .grid-header {
+        display: grid;
+        grid-template-columns: 100px repeat({{ categories|length }}, 1fr);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .grid-cell {
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+        border: 1px solid rgba(255,255,255,0.2);
+        user-select: none;
+    }
+    
+    .category-header {
+        font-size: 1.1em;
+    }
+    
+    .points-header {
+        background: rgba(0,0,0,0.2);
+        font-size: 1.2em;
+    }
+    
+    .grid-row {
+        display: grid;
+        grid-template-columns: 100px repeat({{ categories|length }}, 1fr);
+    }
+    
+    .question-cell {
+        padding: 20px;
+        text-align: center;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #667eea;
+        user-select: none;
+    }
+    
+    .question-cell:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: scale(1.05);
+        z-index: 10;
+        position: relative;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+    
+    .question-cell.answered {
+        background: #f1f3f4;
+        color: #9aa0a6;
+        cursor: not-allowed;
+    }
+    
+    .question-cell.answered:hover {
+        background: #f1f3f4;
+        color: #9aa0a6;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .points-cell {
+        background: rgba(102, 126, 234, 0.1);
+        font-weight: bold;
+        font-size: 1.3em;
+        color: #667eea;
+        user-select: none;
+    }
+    
+    .game-over {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(135deg, #2ed573 0%, #17a2b8 100%);
+        color: white;
+        border-radius: 15px;
+        margin: 20px 0;
+    }
+    
+    @media (max-width: 768px) {
+        .game-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .teams-score {
+            justify-content: center;
+        }
+
+        .game-controls {
+            justify-content: center;
+        }
+        
+        .grid-header, .grid-row {
+            grid-template-columns: 80px repeat({{ categories|length }}, 1fr);
+        }
+        
+        .grid-cell, .question-cell {
+            padding: 10px 5px;
+            font-size: 0.9em;
+        }
+        
+        .question-cell {
+            font-size: 1.2em;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if game_over %}
+<div class="game-over">
+    <h2>🎉 Game Over!</h2>
+    <p>All questions have been answered!</p>
+    <a href="{% url 'final_scores' %}" class="btn">View Final Scores</a>
+</div>
+{% else %}
+<div class="game-header">
+    <div class="current-team" style="background-color: {{ current_team.team.color }}">
+        {{ current_team.team.team_name }}'s Turn
+    </div>
+    
+    <div class="teams-score">
+        {% for team in game_teams %}
+        <div class="team-score" style="background-color: {{ team.team.color }}">
+            {{ team.team.team_name }}<br>
+            <span style="font-size: 1.2em;">{{ team.score }} pts</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="game-controls">
+        <form method="post" action="{% url 'end_game' %}" style="display: inline;"
+              onsubmit="return confirm('Are you sure you want to end the game early?');">
+            {% csrf_token %}
+            <button type="submit" class="end-game-btn">End Game</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="questions-grid">
+        <div class="grid-header">
+            <div class="grid-cell points-header">Points</div>
+            {% for category in categories %}
+            <div class="grid-cell category-header">
+                {% if category.category_name == 'Science' %}🔬
+                {% elif category.category_name == 'History' %}📜
+                {% elif category.category_name == 'Geography' %}🌍
+                {% elif category.category_name == 'Technology' %}💻
+                {% elif category.category_name == 'Sports' %}⚽
+                {% elif category.category_name == 'Entertainment' %}🎬
+                {% elif category.category_name == 'Literature' %}📖
+                {% elif category.category_name == 'Art' %}🎨
+                {% elif category.category_name == 'Music' %}🎵
+                {% elif category.category_name == 'Mathematics' %}🔢
+                {% elif category.category_name == 'Food & Cooking' %}🍳
+                {% elif category.category_name == 'Nature & Animals' %}🦁
+                {% elif category.category_name == 'Language & Communication' %}🗣️
+                {% elif category.category_name == 'Pop Culture & Social Media' %}📱
+                {% else %}🎯{% endif %}
+                <br>{{ category.category_name }}
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% for points in point_values %}
+        <div class="grid-row">
+            <div class="grid-cell points-cell">{{ points }}</div>
+            {% for category in categories %}
+                {% with category_dict=questions_grid|dict_get:category.category_name %}
+                    {% if category_dict %}
+                        {% with available=category_dict|dict_get:points %}
+                            <div class="question-cell {% if not available %}answered{% endif %}"
+                                 {% if available and not game_over %}
+                                 onclick="window.location.href='{% url 'question' category.category_name points %}'"
+                                 {% endif %}>
+                                {% if available %}
+                                    ❓
+                                {% else %}
+                                    ✓
+                                {% endif %}
+                            </div>
+                        {% endwith %}
+                    {% else %}
+                        <div class="question-cell answered">
+                            ✓
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if game_over %}
+<div class="text-center mt-20">
+    <a href="{% url 'final_scores' %}" class="btn btn-success">View Final Results</a>
+    <a href="{% url 'game_setup' %}" class="btn">New Game</a>
+</div>
+{% endif %}
+{% endblock %}

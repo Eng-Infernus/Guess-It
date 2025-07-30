@@ -1,0 +1,47 @@
+<!-- templates/GuessItGame/register.html -->
+{% extends 'base.html' %}
+
+{% block title %}Register - Trivia Game{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2 class="text-center mb-20">📝 Create Account</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required minlength="3" maxlength="30">
+            <small style="color: #666;">Choose a unique username (3-30 characters)</small>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required minlength="6">
+            <small style="color: #666;">At least 6 characters</small>
+        </div>
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password:</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-success">Create Account</button>
+        </div>
+    </form>
+    <div class="text-center mt-20">
+        <p>Already have an account? <a href="{% url 'login' %}" style="color: #667eea;">Login here</a></p>
+    </div>
+</div>
+
+<script>
+    // Password confirmation validation
+    document.getElementById('confirm_password').addEventListener('input', function() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = this.value;
+        
+        if (password !== confirmPassword) {
+            this.setCustomValidity('Passwords do not match');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+</script>
+{% endblock %}

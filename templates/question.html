@@ -1,0 +1,361 @@
+<!-- templates/GuessItGame/question.html -->
+{% extends 'base.html' %}
+
+{% block title %}Question - Trivia Game{% endblock %}
+
+{% block extra_css %}
+<style>
+    .shared-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 3px solid #667eea;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .question-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .current-team-display {
+        padding: 15px 30px;
+        border-radius: 25px;
+        color: white;
+        font-weight: bold;
+        font-size: 1.3em;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+    .question-text {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .question-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .category-tag {
+        background: #667eea;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+
+    .points-display {
+        background: #2ed573;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .answers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .answer-option {
+        padding: 20px;
+        border: 3px solid #ddd;
+        border-radius: 15px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+
+    .answer-option:hover {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .answer-option.selected {
+        border-color: #2ed573;
+        background: linear-gradient(135deg, #2ed573 0%, #17a2b8 100%);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(46, 213, 115, 0.3);
+    }
+
+    .submit-section {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .hints-grid {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .hint-btn {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #ddd;
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #333;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .hint-btn:hover:not(.disabled) {
+        background: #f0f0f0;
+        border-color: #667eea;
+        transform: scale(1.05);
+    }
+
+    .hint-btn.disabled {
+        background: #f8f8f8;
+        color: #aaa;
+        border-color: #ccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .hint-btn.double-points { border-color: #ff6b6b; }
+    .hint-btn.remove-choices { border-color: #ffa726; }
+    .hint-btn.view-hint { border-color: #2ed573; }
+    .hint-btn.replace-question { border-color: #764ba2; }
+
+    .hint-display {
+        background: #fff3cd;
+        border: 2px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: center;
+        font-weight: bold;
+        color: #856404;
+    }
+
+    .double-points-active {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: inline-block;
+        margin: 10px 0;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+        .question-text {
+            font-size: 1.2em;
+        }
+
+        .answers-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .question-meta {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class ="shared-card">
+<div class="question-header">
+    <div class="current-team-display" style="background-color: {{ current_team.team.color }}">
+        {{ current_team.team.team_name }}'s Turn
+    </div>
+</div>
+
+<!-- QUESTION SECTION -->
+<div>
+    <div class="question-meta">
+        <div class="category-tag">{{ category_name }}</div>
+        <div class="points-display" id="pointsDisplay">{{ points }} Points</div>
+    </div>
+    <div class="question-text" id="questionText">{{ question.text }}</div>
+</div>
+
+<!-- ANSWERS SECTION -->
+<div>
+    <h3 style="text-align: center; margin-bottom: 20px;">Choose your answer:</h3>
+
+    <form id="answerForm" method="post" action="{% url 'submit_answer' %}">
+        {% csrf_token %}
+        <input type="hidden" name="question_id" value="{{ question.id }}" id="questionId">
+        <input type="hidden" name="selected_answer" id="selectedAnswer">
+        <input type="hidden" name="double_points" id="doublePointsInput" value="false">
+
+        <div class="answers-grid" id="answersGrid">
+            {% for answer in answers %}
+            <div class="answer-option" onclick="selectAnswer('{{ answer }}')">
+                {{ answer }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="submit-section">
+            <button type="submit" class="btn btn-success" id="submitBtn" disabled>Submit Answer</button>
+{#            <a href="{% url 'game_board' %}" class="btn btn-danger">Back to Board</a>#}
+        </div>
+    </form>
+</div>
+
+<!-- HINTS SECTION -->
+<div >
+    <h3 style="text-align: center;">💡 Hints</h3>
+
+    <div class="hints-grid">
+        <div class="hint-btn double-points {% if not available_hints.double_points %}disabled{% endif %}"
+             onclick="useDoublePoints()" title="🎯 Double your points for this question.">
+            🎯<br>Double
+        </div>
+
+        <div class="hint-btn remove-choices {% if not available_hints.remove_choices %}disabled{% endif %}"
+             onclick="useHint('remove_choices')" title="✂️ Remove two incorrect options.">
+            ✂️<br>Trim
+        </div>
+
+        <div class="hint-btn view-hint {% if not available_hints.view_hint %}disabled{% endif %}"
+             onclick="useHint('view_hint')" title="💭 See a helpful clue for this question.">
+            💭<br>Hint
+        </div>
+
+        <div class="hint-btn replace-question {% if not available_hints.replace_question %}disabled{% endif %}"
+             onclick="useHint('replace_question')" title="🔄 Swap out this question.">
+            🔄<br>Swap
+        </div>
+    </div>
+
+    <div id="hintDisplay" class="hint-display" style="display: none;"></div>
+    <div id="doublePointsIndicator" style="display: none; text-align: center;">
+        <div class="double-points-active">🎯 DOUBLE POINTS ACTIVE! 🎯</div>
+    </div>
+</div>
+</div>
+<script>
+let selectedAnswer = null;
+let doublePointsActive = false;
+
+function selectAnswer(answer) {
+    document.querySelectorAll('.answer-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+
+    event.target.classList.add('selected');
+    selectedAnswer = answer;
+    document.getElementById('selectedAnswer').value = answer;
+    document.getElementById('submitBtn').disabled = false;
+}
+
+function useDoublePoints() {
+    if (!{{ available_hints.double_points|yesno:"true,false" }}) return;
+
+    doublePointsActive = true;
+    document.getElementById('doublePointsInput').value = 'true';
+    document.getElementById('doublePointsIndicator').style.display = 'block';
+    document.getElementById('pointsDisplay').innerHTML = '{{ points|add:points }} Points (2x)';
+
+    event.target.classList.add('disabled');
+    event.target.onclick = null;
+}
+
+function useHint(hintType) {
+    const hintBtn = event.target;
+    if (hintBtn.classList.contains('disabled')) return;
+
+    hintBtn.classList.add('disabled');
+    hintBtn.onclick = null;
+
+    fetch('{% url "use_hint" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `hint_type=${hintType}&question_id={{ question.id }}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            if (hintType === 'remove_choices' && data.removed_choices) {
+                data.removed_choices.forEach(choice => {
+                    const options = document.querySelectorAll('.answer-option');
+                    options.forEach(opt => {
+                        if (opt.innerText.trim() === choice.trim()) {
+                            opt.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            if (hintType === 'view_hint' && data.hint_text) {
+                const hintDisplay = document.getElementById('hintDisplay');
+                hintDisplay.innerText = '💡 Hint: ' + data.hint_text;
+                hintDisplay.style.display = 'block';
+            }
+
+            if (hintType === 'replace_question' && data.new_question_text && data.new_answers) {
+                document.getElementById('questionText').innerText = data.new_question_text;
+                document.getElementById('questionId').value = data.new_question_id;
+
+                const answersGrid = document.getElementById('answersGrid');
+                answersGrid.innerHTML = '';
+                data.new_answers.forEach(answer => {
+                    const div = document.createElement('div');
+                    div.className = 'answer-option';
+                    div.onclick = function () { selectAnswer(answer); };
+                    div.innerText = answer;
+                    answersGrid.appendChild(div);
+                });
+
+                selectedAnswer = null;
+                document.getElementById('selectedAnswer').value = '';
+                document.getElementById('submitBtn').disabled = true;
+
+                document.getElementById('hintDisplay').style.display = 'none';
+            }
+        } else {
+            alert('Failed to use hint: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Hint Error:', error);
+        alert('Something went wrong while using the hint.');
+    });
+}
+</script>
+{% endblock %}
